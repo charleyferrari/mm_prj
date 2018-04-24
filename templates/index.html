@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recruitment Application</title>
+
+</head>
+<body>
+    <h1>Recruitment Application</h1>
+
+    <h2>Max Income</h2>
+    <div id="viz">
+        <ul></ul>
+    </div>
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+
+        d3.json("/api/max_income", function(json){
+
+            d3.select("#viz ul")
+                .selectAll("li")
+                .data(json.data)
+                .enter()
+                .append("li")
+                .text(function(d) { return d.gender + ": " + d.max_income; });
+        });
+
+    </script>
+</body>
+</html>
