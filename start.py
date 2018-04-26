@@ -4,9 +4,12 @@ import sqlite3
 from flask import Flask, jsonify
 from flask import render_template
 
+import pandas as pd
+
 app = Flask(__name__)
 
 DATABASE = "./recruit.db"
+
 
 def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"
@@ -15,6 +18,7 @@ def dictfetchall(cursor):
         dict(zip(columns, row))
         for row in cursor.fetchall()
     ]
+
 
 def query_db(query):
 
@@ -53,6 +57,30 @@ def api_test():
     # print(result_dict)
 
     return jsonify({'data': result_dict})
+
+
+@app.route('/api/full_api', methods=['GET'])
+def full_api():
+    result_dict = query_db("SELECT * FROM customer")
+    return jsonify({'data': result_dict})
+
+
+@app.route('/api/econ_api', methods=['GET'])
+def econ_api():
+    connection = sqlite3.connect(DATABASE)
+    query = 'SELECT customer.economic_stability, insurance_segment.value, \
+            count(customer.economic_stability) as cnt \
+            FROM customer \
+            INNER JOIN insurance_segment ON customer.insurance_segment_id = insurance_segment.id \
+            GROUP BY customer.economic_stability, insurance_segment.value'
+    data = pd.read_sql(query, connection)
+    data_pivot = data.pivot(index='economic_stability', columns='value', values='cnt')\
+        .fillna(0).reset_index()
+    data_dict = data_pivot.to_dict(orient='records')
+    max_y = data.groupby('economic_stability').sum()['cnt'].max()
+    econ = list(data['economic_stability'].unique())
+    return jsonify(dict(data=data_dict, max_y=max_y, econ=econ))
+
 
 if __name__ == '__main__':
     app.run()
