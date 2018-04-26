@@ -4,44 +4,44 @@
     <meta charset="UTF-8">
     <style>
 
-    .bar rect {
+    /* .bar rect {
       fill: steelblue;
     }
 
     .bar text {
       fill: #fff;
       font: 10px sans-serif;
-    }
+    } */
 
-    .price rect {
+    .price {
       fill: rgb(228,26,28);
     }
 
-    .stretched rect {
+    .stretched {
       fill: rgb(55,126,184);
     }
 
-    .hands rect {
+    .hands {
       fill: rgb(77,175,74);
     }
 
-    .nest rect {
+    .nest {
       fill: rgb(152,78,163);
     }
 
-    .country rect {
+    .country {
       fill: rgb(255,127,0);
     }
 
-    .solid rect {
+    .solid {
       fill: rgb(255,255,51);
     }
 
-    .full rect {
+    .full {
       fill: rgb(166,86,40);
     }
 
-    .getting rect {
+    .getting {
       fill: rgb(247,129,191);
     }
 
@@ -63,6 +63,8 @@
 
     <div id='bar'></div>
 
+    <div id='box'></div>
+
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script>
 
@@ -76,69 +78,150 @@
                 .text(function(d) { return d.gender + ": " + d.max_income; });
         });
 
-        let margin = {top: 20, right: 20, bottom: 30, left: 40},
-          width = 960 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
 
-        let svg = d3.select('#bar').append('svg')
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
+        let bar_margin = {top: 20, right: 20, bottom: 30, left: 40},
+          bar_width = 960 - bar_margin.left - bar_margin.right,
+          bar_height = 500 - bar_margin.top - bar_margin.bottom;
+
+        let bar_svg = d3.select('#bar').append('svg')
+            .attr("width", bar_width + bar_margin.left + bar_margin.right)
+            .attr("height", bar_height + bar_margin.top + bar_margin.bottom)
           .append("g")
             .attr("transform",
-                "translate(" + margin.left + "," + margin.top + ")");
+                "translate(" + bar_margin.left + "," + bar_margin.top + ")");
 
         d3.json('/api/econ_api', function(json){
 
-          // economic_stability = [];
-          // json.data.forEach(function(d){
-          //   economic_stability.push(+d.economic_stability)
-          // });
-
-          // console.log(economic_stability);
-
-          // let counts = [], economic_stability = [];
-          //
-          // json.data.forEach(function(d){
-          //   economic_stability.push(d.economic_stability);
-          //   counts.push(d.cnt)
-          // });
-
-          console.log(json);
-
           let x = d3.scaleBand()
-            .range([0, width])
+            .range([0, bar_width])
             .domain(json.econ)
             .padding(0.1);
 
           let y = d3.scaleLinear()
-            .range([height, 0])
+            .range([bar_height, 0])
             .domain([0, json.max_y]);
 
-          svg.selectAll('.price')
+          bar_svg.selectAll('.nest')
             .data(json.data)
             .enter().append('rect')
-              .attr('class', 'price')
-              .attr('x', function(d){ return x(d.economic_stability)})
+              .attr('class', 'nest')
+              .attr('x', d => x(d.economic_stability))
               .attr('width', x.bandwidth())
-              .attr('y', function(d){ return y(d['Price Isn\'t Primary'])})
-              .attr('height', function(d){ return height - y(d['Price Isn\'t Primary'])})
+              .attr('y', d => y(d['The Nest is Empty']))
+              .attr('height', d => bar_height - y(d['The Nest is Empty']));
 
-          svg.selectAll('.stretched')
+          bar_svg.selectAll('.stretched')
             .data(json.data)
             .enter().append('rect')
               .attr('class', 'stretched')
-              .attr('x', function(d){ return x(d.economic_stability)})
+              .attr('x', d => x(d.economic_stability))
               .attr('width', x.bandwidth())
-              .attr('y', function(d){ return y(d['Stretched Singles'])})
-              .attr('height', function(d){ return height - y(d['Stretched Singles'])})
+              .attr('y', d => y(d['Stretched Singles']))
+              .attr('height', d => bar_height - y(d['Stretched Singles']));
 
-          svg.append('g')
-            .attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(x));
+          bar_svg.selectAll('.solid')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'solid')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Solid Suburbans']))
+              .attr('height', d => bar_height - y(d['Solid Suburbans']));
 
-          svg.append('g')
-            .call(d3.axisLeft(y));
+          bar_svg.selectAll('.price')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'price')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Price Isn\'t Primary']))
+              .attr('height', d => bar_height - y(d['Price Isn\'t Primary']));
 
+          bar_svg.selectAll('.hands')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'hands')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Hands Full']))
+              .attr('height', d => bar_height - y(d['Hands Full']));
+
+          bar_svg.selectAll('.getting')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'getting')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Getting By']))
+              .attr('height', d => bar_height - y(d['Getting By']));
+
+          bar_svg.selectAll('.full')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'full')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Full House']))
+              .attr('height', d => bar_height - y(d['Full House']));
+
+          bar_svg.selectAll('.country')
+            .data(json.data)
+            .enter().append('rect')
+              .attr('class', 'country')
+              .attr('x', d => x(d.economic_stability))
+              .attr('width', x.bandwidth())
+              .attr('y', d => y(d['Country Middles']))
+              .attr('height', d => bar_height - y(d['Country Middles']));
+
+
+            bar_svg.append('g')
+              .attr('transform', 'translate(0,' + bar_height + ')')
+              .call(d3.axisBottom(x));
+
+            bar_svg.append('g')
+              .call(d3.axisLeft(y));
+
+
+        });
+
+        let box_margin = {top: 20, right: 20, bottom: 30, left: 40},
+          box_width = 960-box_margin.left - box_margin.right,
+          box_height = 500 - box_margin.top - box_margin.bottom,
+          box_indiv_width = 30;
+
+        let box_svg = d3.select('#box').append('svg')
+            .attr('width', box_width + box_margin.left + box_margin.right)
+            .attr('height', box_height + box_margin.top + box_margin.bottom)
+          .append('g')
+            .attr('transform',
+                'translate(' + box_margin.left + ',' + box_margin.top + ')');
+
+        d3.json('/api/box_api', function(json){
+
+          let x = d3.scalePoint()
+            .domain(Object.keys(json.data))
+            .rangeRound([0, box_width])
+            .padding([0.5])
+
+          let y = d3.scaleLinear()
+            .domain([json.max_y, json.min_y])
+            .range([0, box_height])
+
+          box_svg.selectAll('.verticalLines')
+            .data(json.data)
+            .enter()
+            .append('line')
+            .attr('x1', d => x(d.key) + box_indiv_width/2)
+            .attr('y1', d => y(d3.max(d.income)))
+            .attr('x2', d => x(d.key) + box_indiv_width/2)
+            .attr('y2', d => y(d3.min(d.income)))
+            .attr('stroke', '#000')
+            .attr('stroke-width', 1)
+            .attr('fill', 'none');
+
+          // x() isn't working
+
+          console.log(x(json.data[0].key));
 
         });
 

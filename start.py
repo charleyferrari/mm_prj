@@ -75,12 +75,47 @@ def econ_api():
             GROUP BY customer.economic_stability, insurance_segment.value'
     data = pd.read_sql(query, connection)
     data_pivot = data.pivot(index='economic_stability', columns='value', values='cnt')\
-        .fillna(0).reset_index()
+        .cumsum(axis=1).fillna(0).reset_index()
     data_dict = data_pivot.to_dict(orient='records')
     max_y = data.groupby('economic_stability').sum()['cnt'].max()
     econ = list(data['economic_stability'].unique())
     return jsonify(dict(data=data_dict, max_y=max_y, econ=econ))
 
 
+@app.route('/api/box_api', methods=['GET'])
+def box_api():
+    connection = sqlite3.connect(DATABASE)
+
+    data_dict = dict()
+
+    insurance_segment = pd.read_sql('select * FROM insurance_segment', connection)
+
+    for key in insurance_segment['value']:
+        data_dict[key] = []
+
+    query = 'SELECT customer.income, insurance_segment.value\
+            FROM customer \
+            INNER JOIN insurance_segment ON customer.insurance_segment_id = insurance_segment.id'
+
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    min_y = 1000000
+    max_y = 0
+
+    for row in cursor.fetchall():
+        data_dict[row[1]].append(row[0])
+        if row[0] < min_y:
+            min_y = row[0]
+        if row[0] > max_y:
+            max_y = row[0]
+
+    data = []
+    for key, value in data_dict.items():
+        data.append(dict(key=key, income=value))
+
+    return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
