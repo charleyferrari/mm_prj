@@ -88,7 +88,15 @@ def econ_api():
                                  values='cnt')\
         .fillna(0).reset_index()
     data_cum_dict = data_pivot.to_dict(orient='records')
+    # Get rid of numpy types
+    for item in data_cum_dict:
+        for key, val in item.iteritems():
+            val = str(val) if key == 'economic_stability' else int(val)
     data_vals_dict = data_pivot_vals.to_dict(orient='records')
+    for item in data_vals_dict:
+        for key, val in item.iteritems():
+            val = str(val) if key == 'economic_stability' else int(val)
+
     data_dict = [dict(val=val, cum=cum)
                  for val, cum in zip(data_vals_dict, data_cum_dict)]
 
@@ -145,10 +153,10 @@ def box_api():
                          p25=float(p25), med=float(med), p75=float(p75),
                          max=float(max_num)))
 
-    min_y = float(min([i['min'] for i in data]))
-    max_y = float(max([i['max'] for i in data]))
+    min_y = min([i['min'] for i in data])
+    max_y = max([i['max'] for i in data])
 
-    print(type(data[0]['key']))
+    print(type(data[0]['p75']))
 
     return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
 
