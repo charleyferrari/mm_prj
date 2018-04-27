@@ -66,6 +66,10 @@
       font-size: 10px;
     }
 
+    p, h1, h2, h3, ul {
+      margin: 10px 20px
+    }
+
     </style>
     <title>Recruitment Application</title>
 
@@ -78,7 +82,45 @@
         <ul></ul>
     </div>
 
+    <h2>Data Exploration</h2>
+    <p>I structured this project around the predefined insurance segments.
+      Given established practices in dealing with these various market
+      segments, it would be useful to classify people based on demographic
+      data.</p>
+    <p>Since this is a classification problem, our target variable is
+      categorical. Visual inspection depends on whether we're looking at
+      categorical or numeric independent variables (and, for categorical data,
+      how many categories we have.)</p>
+
+    <h3>Categorical Data</h3>
+    <p>I prefer area based visualizations to visualize the effect of
+      categorical variables. With small numbers of categories, I would lean
+      more towards mosaic plots. I chose a stacked bar chart for economic
+      stability because we're looking at a large number of ordinal values.
+      Bars help to define the order, and by representing values allow us to
+      also view the overall distribution of records across economic stability.</p>
+    <p>Normalizing the data would make it a bit easier to view the effects, but
+      I think the tradeoff in this case is worth it. Relationships between segments
+      and economic stability are still clear (for example, it's easy to see
+      "Stretched Singles" have higher econoimc stability than "Solid Suburbans")</p>
+    <p>This sort of visualization would work for other category-heavy variables,
+      such as youtube rank. For variables with fewer categories such as gender,
+      is_smoker, or is_excerciser, a mosaic plot would be more useful.</p>
+
     <div id='bar'></div>
+
+    <h3>Numeric Data</h3>
+    <p>Numeric data is better shown by histograms or boxplots. I chose a box
+      plot in this case to easily compare across categories, but could have also
+      used small multiples of histograms for each segment.</p>
+    <p>I faced an interesting problem with this variable: income is almost
+      always right skewed. Outliers are normally shown as points outside the
+      whiskers of  a boxplot, but the distribution of income would result in
+      a large and potentially distracting number of points above each box. I
+      decided to just exclude outliers in this case, since for visual analysis,
+      the distribution around the interquartile range matters more than the
+      behavior of the outliers (though this would have to be dealt with when
+      building a model.)</p>
 
     <div id='box'></div>
 
