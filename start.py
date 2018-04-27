@@ -7,8 +7,6 @@ from flask import render_template
 import pandas as pd
 import numpy as np
 
-import json
-
 app = Flask(__name__)
 
 DATABASE = "./recruit.db"
@@ -89,9 +87,8 @@ def econ_api():
                                  columns='value',
                                  values='cnt')\
         .fillna(0).reset_index()
-    # Extra step needed to get rid of numpy datatypes
-    data_cum_dict = json.loads(data_pivot.to_json(orient='records'))
-    data_vals_dict = json.loads(data_pivot_vals.to_json(orient='records'))
+    data_cum_dict = data_pivot.to_dict(orient='records')
+    data_vals_dict = data_pivot_vals.to_dict(orient='records')
 
     data_dict = [dict(val=val, cum=cum)
                  for val, cum in zip(data_vals_dict, data_cum_dict)]
@@ -145,9 +142,9 @@ def box_api():
         iqr = p75 - p25
         max_num = p75 + 1.5*iqr if p75 + 1.5*iqr < max(value) else max(value)
         min_num = p25 - 1.5*iqr if p25 - 1.5*iqr > min(value) else min(value)
-        data.append(dict(key=str(key), iqr=float(iqr), min=float(min_num),
-                         p25=float(p25), med=float(med), p75=float(p75),
-                         max=float(max_num)))
+        data.append(dict(key=key, iqr=iqr, min=min_num,
+                         p25=p25, med=med, p75=p75,
+                         max=max_num))
 
     min_y = min([i['min'] for i in data])
     max_y = max([i['max'] for i in data])
