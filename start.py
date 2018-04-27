@@ -1,10 +1,11 @@
 import sys
 import sqlite3
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask import render_template
 
 import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 
@@ -34,7 +35,7 @@ def query_db(query):
     except sqlite3.OperationalError as e:
         print("Db operation error", e)
         result_dict["error"] = str(e)
-    except:
+    except:  # noqa
         e = sys.exc_info()[0]
         print("An error occurred with the database", e)
         result_dict["error"] = str(e)
@@ -53,7 +54,8 @@ def index():
 @app.route('/api/max_income', methods=['GET'])
 def api_test():
 
-    result_dict = query_db("select gender, max(income) as max_income from customer group by gender")
+    result_dict = query_db("select gender, max(income) as max_income from \
+                           customer group by gender")
     # print(result_dict)
 
     return jsonify({'data': result_dict})
@@ -71,12 +73,22 @@ def econ_api():
     query = 'SELECT customer.economic_stability, insurance_segment.value, \
             count(customer.economic_stability) as cnt \
             FROM customer \
-            INNER JOIN insurance_segment ON customer.insurance_segment_id = insurance_segment.id \
+            INNER JOIN insurance_segment \
+            ON customer.insurance_segment_id = insurance_segment.id \
             GROUP BY customer.economic_stability, insurance_segment.value'
     data = pd.read_sql(query, connection)
-    data_pivot = data.pivot(index='economic_stability', columns='value', values='cnt')\
+    data_pivot = data.pivot(index='economic_stability',
+                            columns='value',
+                            values='cnt')\
         .cumsum(axis=1).fillna(0).reset_index()
-    data_dict = data_pivot.to_dict(orient='records')
+    data_pivot_vals = data.pivot(index='economic_stability',
+                                 columns='value',
+                                 values='cnt')\
+        .fillna(0).reset_index()
+    data_cum_dict = data_pivot.to_dict(orient='records')
+    data_vals_dict = data_pivot_vals.to_dict(orient='records')
+    data_dict = [dict(val=val, cum=cum)
+                 for val, cum in zip(data_vals_dict, data_cum_dict)]
     max_y = data.groupby('economic_stability').sum()['cnt'].max()
     econ = list(data['economic_stability'].unique())
     return jsonify(dict(data=data_dict, max_y=max_y, econ=econ))
@@ -88,33 +100,43 @@ def box_api():
 
     data_dict = dict()
 
-    insurance_segment = pd.read_sql('select * FROM insurance_segment', connection)
+    insurance_segment = pd.read_sql('select * FROM insurance_segment',
+                                    connection)
 
     for key in insurance_segment['value']:
         data_dict[key] = []
 
     query = 'SELECT customer.income, insurance_segment.value\
             FROM customer \
-            INNER JOIN insurance_segment ON customer.insurance_segment_id = insurance_segment.id'
+            INNER JOIN insurance_segment \
+            ON customer.insurance_segment_id = insurance_segment.id'
 
     cursor = connection.cursor()
     cursor.execute(query)
 
-    min_y = 1000000
-    max_y = 0
-
     for row in cursor.fetchall():
         data_dict[row[1]].append(row[0])
-        if row[0] < min_y:
-            min_y = row[0]
-        if row[0] > max_y:
-            max_y = row[0]
 
     data = []
     for key, value in data_dict.items():
-        data.append(dict(key=key, income=value))
+        p75 = np.percentile(value, 75)
+        p25 = np.percentile(value, 25)
+        med = np.percentile(value, 50)
+        iqr = p75 - p25
+        max_num = p75 + 1.5*iqr if p75 + 1.5*iqr < max(value) else max(value)
+        min_num = p25 - 1.5*iqr if p25 - 1.5*iqr > min(value) else min(value)
+        data.append(dict(key=key, iqr=iqr, min=min_num, p25=p25, med=med,
+                         p75=p75, max=max_num))
+
+    min_y = min([i['min'] for i in data])
+    max_y = max([i['max'] for i in data])
 
     return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
+
+
+@app.route('/js/<path:path>')
+def send_js(path):
+    return send_from_directory('js', path)
 
 
 if __name__ == '__main__':
