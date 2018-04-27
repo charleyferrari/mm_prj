@@ -145,10 +145,10 @@ def box_api():
                          p25=float(p25), med=float(med), p75=float(p75),
                          max=float(max_num)))
 
-    min_y = min([i['min'] for i in data])
-    max_y = max([i['max'] for i in data])
+    min_y = float(min([i['min'] for i in data]))
+    max_y = float(max([i['max'] for i in data]))
 
-    print(type(data[0]['p75']))
+    print(type(data[0]['key']))
 
     return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
 
