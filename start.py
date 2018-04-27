@@ -141,11 +141,14 @@ def box_api():
         iqr = p75 - p25
         max_num = p75 + 1.5*iqr if p75 + 1.5*iqr < max(value) else max(value)
         min_num = p25 - 1.5*iqr if p25 - 1.5*iqr > min(value) else min(value)
-        data.append(dict(key=key, iqr=iqr, min=min_num, p25=p25, med=med,
-                         p75=p75, max=max_num))
+        data.append(dict(key=key, iqr=float(iqr), min=float(min_num),
+                         p25=float(p25), med=float(med), p75=float(p75),
+                         max=float(max_num)))
 
     min_y = min([i['min'] for i in data])
     max_y = max([i['max'] for i in data])
+
+    print(type(data[0]['p75']))
 
     return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
 
