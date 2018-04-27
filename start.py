@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 
 app = Flask(__name__)
-server = app.server
 
 DATABASE = "./recruit.db"
 
