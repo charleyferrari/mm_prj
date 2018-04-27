@@ -8,19 +8,18 @@ d3.json('/api/max_income', json => {
     .text(d => `${d.gender}: ${d.max_income}`);
 });
 
-const classFromKey = key => {
-  const [first] = key.split(' ');
-  return first === 'The' ? 'nest' : first.toLowerCase();
-};
+// -----------------------------------------------------------------------
+// Stacked Bar Chart
+// -----------------------------------------------------------------------
 
-const MAX_WIDTH = 960;
+// Define margins, heights and widths
 let bar_margin = {
     top: 20,
     right: 20,
-    bottom: 30,
+    bottom: 40,
     left: 60
   },
-  bar_width = MAX_WIDTH - bar_margin.left - bar_margin.right,
+  bar_width = 960 - bar_margin.left - bar_margin.right,
   bar_height = 500 - bar_margin.top - bar_margin.bottom;
 
 const bar_svg = d3
@@ -31,10 +30,17 @@ const bar_svg = d3
   .append('g')
   .attr('transform', `translate(${bar_margin.left},${bar_margin.top})`);
 
+// Predefine the div for the tooltips.
 let bar_tooltip = d3
   .select('body')
   .append('div')
   .attr('class', 'toolTip');
+
+// Helper function to map classes from the insurance_segment keys
+const classFromKey = key => {
+  const [first] = key.split(' ');
+  return first == 'The' ? 'nest' : first.toLowerCase();
+};
 
 d3.json('/api/econ_api', json => {
   const x = d3
@@ -48,6 +54,13 @@ d3.json('/api/econ_api', json => {
     .range([bar_height, 0])
     .domain([0, json.max_y]);
 
+  bar_legend = bar_svg
+    .append('g')
+    .attr('class', 'legend')
+    .attr('transform', `translate(${7 * bar_width / 8}, ${bar_height / 12})`);
+
+  // Add a trace and legend entry for each insurance segment
+  let i = 0;
   Object.keys(json.data[0].cum)
     .reverse()
     .forEach(e => {
@@ -62,6 +75,7 @@ d3.json('/api/econ_api', json => {
           .attr('width', x.bandwidth())
           .attr('y', d => y(d.cum[e]))
           .attr('height', d => bar_height - y(d.cum[e]))
+          // Add display tooltips when hovering over bars
           .on('mouseover', d => {
             bar_tooltip
               .html(
@@ -73,9 +87,26 @@ d3.json('/api/econ_api', json => {
               .style('left', `${d3.event.pageX}px`)
               .style('top', `${d3.event.pageY - 28}px`);
           })
+          // And get rid of it on mouseout
           .on('mouseout', d => {
             bar_tooltip.style('opacity', 0);
           });
+
+        bar_legend
+          .append('rect')
+          .attr('class', classFromKey(e))
+          .attr('x', 0)
+          .attr('y', i - 10)
+          .attr('height', 11)
+          .attr('width', 11);
+
+        bar_legend
+          .append('text')
+          .text(e)
+          .attr('transform', `translate(13, ${i})`)
+          .attr('class', 'legend-text');
+
+        i += 12;
       }
     });
 
@@ -87,18 +118,26 @@ d3.json('/api/econ_api', json => {
   bar_svg.append('g').call(d3.axisLeft(y));
 });
 
+// Add axis Labels
 bar_svg
   .append('text')
   .attr('text-anchor', 'middle')
   .attr('transform', `translate(-40, ${bar_height / 2})rotate(-90)`)
+  .attr('class', 'axis-label')
   .text('Count');
 
 bar_svg
   .append('text')
   .attr('text-anchor', 'middle')
-  .attr('transform', `translate(${bar_width / 2}, ${bar_height - 60})`)
+  .attr('transform', `translate(${bar_width / 2}, ${bar_height + 30})`)
+  .attr('class', 'axis-label')
   .text('Economic Stability');
 
+// -----------------------------------------------------------------------
+// Box Plot
+// -----------------------------------------------------------------------
+
+// Define margins, heights and widths
 let box_margin = {
     top: 20,
     right: 20,
@@ -129,6 +168,7 @@ d3.json('/api/box_api', json => {
     .domain([json.max_y, json.min_y])
     .range([0, box_height]);
 
+  // Draw the vertical lines covering IQR + 1.5*IQR in either direction
   box_svg
     .selectAll('.verticalLines')
     .data(json.data)
@@ -142,6 +182,7 @@ d3.json('/api/box_api', json => {
     .attr('stroke-width', 1)
     .attr('fill', 'none');
 
+  // draw rectangles for the boxes covering IQR
   box_svg
     .selectAll('rect')
     .data(json.data)
@@ -155,6 +196,8 @@ d3.json('/api/box_api', json => {
     .attr('stroke', '#000')
     .attr('stroke-width', 1);
 
+  // Loop through the three horizontal lines (min, max, and median) to complete
+  // the whiskers.
   ['max', 'med', 'min'].forEach(e => {
     box_svg
       .selectAll('.whiskers')

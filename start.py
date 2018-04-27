@@ -61,12 +61,11 @@ def api_test():
     return jsonify({'data': result_dict})
 
 
-@app.route('/api/full_api', methods=['GET'])
-def full_api():
-    result_dict = query_db("SELECT * FROM customer")
-    return jsonify({'data': result_dict})
-
-
+# API used for the stacked Bar Chart
+# API returns json records of counts each insurance segment and Economic
+# Stability scores. Each record is grouped into cumulative values and actual
+# values. Cumulative values are used to draw the bars, while actual values are
+# displayed in the tooltips
 @app.route('/api/econ_api', methods=['GET'])
 def econ_api():
     connection = sqlite3.connect(DATABASE)
@@ -76,6 +75,9 @@ def econ_api():
             INNER JOIN insurance_segment \
             ON customer.insurance_segment_id = insurance_segment.id \
             GROUP BY customer.economic_stability, insurance_segment.value'
+
+    # Using Pandas for this because I wanted to pivot the data
+    # Create one dict for Cumulative, one dict for pivot, then combine them.
     data = pd.read_sql(query, connection)
     data_pivot = data.pivot(index='economic_stability',
                             columns='value',
@@ -89,11 +91,18 @@ def econ_api():
     data_vals_dict = data_pivot_vals.to_dict(orient='records')
     data_dict = [dict(val=val, cum=cum)
                  for val, cum in zip(data_vals_dict, data_cum_dict)]
+
+    # Since we're grouping traces, I found it convenient to pre-calculate the
+    # max and min to get a full range. An array of economic stability scores
+    # are also included for convenience.
     max_y = data.groupby('economic_stability').sum()['cnt'].max()
     econ = list(data['economic_stability'].unique())
     return jsonify(dict(data=data_dict, max_y=max_y, econ=econ))
 
 
+# API used for the box plot. Everything is precalculated in flask, and the only
+# values being passed on are the borders of the boxes. One record for each
+# insurance segment.
 @app.route('/api/box_api', methods=['GET'])
 def box_api():
     connection = sqlite3.connect(DATABASE)
@@ -114,9 +123,16 @@ def box_api():
     cursor = connection.cursor()
     cursor.execute(query)
 
+    # Bring in the query in an initial dict structure
     for row in cursor.fetchall():
         data_dict[row[1]].append(row[0])
 
+    # Calculate helpful values for building a boxplot, such as percentiles,
+    # IQR, and whisker mins and maxes. Income is almost always right skewed, so
+    # I decided to not include outliers in this visualization. In an
+    # exploratory analysis, the distribution of income is more important than
+    # visualizing outliers. Otherwise, I would have just added an array of
+    # outliers to the data_dict.
     data = []
     for key, value in data_dict.items():
         p75 = np.percentile(value, 75)
@@ -134,6 +150,7 @@ def box_api():
     return jsonify(dict(data=data, min_y=min_y, max_y=max_y))
 
 
+# routing for index.js
 @app.route('/js/<path:path>')
 def send_js(path):
     return send_from_directory('js', path)
