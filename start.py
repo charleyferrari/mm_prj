@@ -7,6 +7,8 @@ from flask import render_template
 import pandas as pd
 import numpy as np
 
+import json
+
 app = Flask(__name__)
 
 DATABASE = "./recruit.db"
@@ -87,15 +89,9 @@ def econ_api():
                                  columns='value',
                                  values='cnt')\
         .fillna(0).reset_index()
-    data_cum_dict = data_pivot.to_dict(orient='records')
-    # Get rid of numpy types
-    for item in data_cum_dict:
-        for key, val in item.items():
-            val = str(val) if key == 'economic_stability' else int(val)
-    data_vals_dict = data_pivot_vals.to_dict(orient='records')
-    for item in data_vals_dict:
-        for key, val in item.items():
-            val = str(val) if key == 'economic_stability' else int(val)
+    # Extra step needed to get rid of numpy datatypes
+    data_cum_dict = json.loads(data_pivot.to_json(orient='records'))
+    data_vals_dict = json.loads(data_pivot_vals.to_json(orient='records'))
 
     data_dict = [dict(val=val, cum=cum)
                  for val, cum in zip(data_vals_dict, data_cum_dict)]
