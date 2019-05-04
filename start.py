@@ -96,7 +96,7 @@ def econ_api():
     # Since we're grouping traces, I found it convenient to pre-calculate the
     # max and min to get a full range. An array of economic stability scores
     # are also included for convenience.
-    max_y = data.groupby('economic_stability').sum()['cnt'].max()
+    max_y = int(data.groupby('economic_stability').sum()['cnt'].max())
     econ = list(data['economic_stability'].unique())
     return jsonify(dict(data=data_dict, max_y=max_y, econ=econ))
 
